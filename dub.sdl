@@ -1,0 +1,36 @@
+name "s3-proxy"
+description "S3 Proxy"
+authors "skoppe"
+copyright "Copyright © 2021, skoppe"
+license "MIT"
+dependency "httparsed" version="~>1.2.0"
+dependency "aws" version="~>1.1.0"
+dependency "requests" version="~>2.0.0"
+dependency "concurrency" version=">=3.0.3"
+dependency "urld" version="~>2.1.1"
+dependency "toml-foolery" version="~>1.0.1"
+dependency "arsd-official:cgi" version=">=10.2.0"
+dependency "arsd-official:http" version=">=10.2.0"
+configuration "default" {
+	targetType "executable"
+}
+configuration "unittest" {
+	dependency "unit-threaded" version=">=1.0.15"
+	dependency "dshould" version="*" // stupid toml require dshould in unittest mode
+	targetType "executable"
+	targetName "ut"
+	mainSourceFile "test/ut/ut_runner.d"
+	sourcePaths "source" "test/ut"
+	excludedSourceFiles "source/app.d"
+	importPaths "source" "test/ut"
+}
+configuration "it" {
+	dependency "unit-threaded" version=">=0.0.0"
+	dependency "dshould" version="*" // stupid toml require dshould in unittest mode
+	targetType "executable"
+	targetName "it"
+	mainSourceFile "test/it/it_runner.d"
+	sourcePaths "source" "test/it"
+	excludedSourceFiles "source/app.d"
+	importPaths "source" "test/it"
+}

@@ -1,0 +1,30 @@
+module app;
+
+void main() {
+  import concurrency.stream : transform, take, toList;
+  import concurrency.sender;
+  import concurrency.stoptoken;
+  import concurrency.operations : via, then, whenAll, withStopToken;
+  import concurrency.thread;
+  import concurrency;
+  import concurrency.nursery;
+  import s3proxy.proxy;
+  import s3proxy.http;
+  import s3proxy.server;
+
+  auto socket = openListeningSocket("0.0.0.0", 8080).unwrap();
+  auto server = listenServer(socket);
+  auto pool = cast(shared)stdTaskPool(8);
+  auto stopSource = new shared StopSource();
+  auto nursery = new shared Nursery();
+
+  auto config = loadConfig(readText("s3proxy.toml")).parseConfig();
+  auto api = shared Proxy(config);
+
+  auto runServer = server.transform((socket_t t) shared @trusted {
+      nursery.run(just(t).via(pool.getScheduler().schedule()).withStopToken(&api.handle));
+    }).collect(() shared {});
+
+  nursery.run(runServer);
+  nursery.syncWait(stopSource).assumeOk;
+}

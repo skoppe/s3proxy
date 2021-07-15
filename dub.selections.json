@@ -1,0 +1,25 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"arsd-official": "10.2.0",
+		"automem": "0.6.4",
+		"aws": "1.1.0",
+		"cachetools": "0.3.1",
+		"colorize": "1.0.5",
+		"concepts": "0.0.8",
+		"concurrency": "3.0.3",
+		"datefmt": "1.0.4",
+		"dshould": "1.1.0",
+		"httparsed": "1.2.0",
+		"ikod-containers": "0.0.20",
+		"mir-core": "1.1.75",
+		"pegged": "0.4.5",
+		"requests": "2.0.0",
+		"silly": "1.1.1",
+		"taggedalgebraic": "0.11.22",
+		"test_allocator": "0.3.3",
+		"toml-foolery": "1.0.1",
+		"unit-threaded": "1.0.15",
+		"urld": "2.1.1"
+	}
+}
