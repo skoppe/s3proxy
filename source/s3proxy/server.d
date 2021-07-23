@@ -33,7 +33,6 @@ auto listenServer(socket_t sock) @safe {
         @disable this(ref return scope typeof(this) rhs);
         @disable this(this);
         void start() @trusted nothrow {
-            import std.stdio : writeln;
             auto stopToken = receiver.getStopToken();
             // on linux use an eventfd and have the stoptoken trigger it when stop is requested
             // on windows we while loop and check token every once in a while
@@ -45,7 +44,6 @@ auto listenServer(socket_t sock) @safe {
                     close(stopfd);
 
                 auto cb = stopToken.onStop(() shared @trusted {
-                        debug writeln("onStop");
                         ulong b = 1;
                         write(stopfd, &b, typeof(b).sizeof);
                     });
@@ -65,13 +63,11 @@ auto listenServer(socket_t sock) @safe {
                     tv.tv_usec = 10000;
                 }
             retry:
-                debug writeln("selecting");
                 version (linux) {
                     const ret = select(max(sock, stopfd) + 1, &read_fds, null, null, null);
                 } else {
                     const ret = select(cast(int) (sock + 1), &read_fds, null, null, &tv);
                 }
-                debug writeln("select ", ret);
                 if (ret == 0) {
                     continue;
                 } else if (ret == -1) {
@@ -97,7 +93,6 @@ auto listenServer(socket_t sock) @safe {
                 }
                 version (linux) {
                     if (FD_ISSET(stopfd, &read_fds)) {
-                        debug writeln("stopped");
                         break;
                     }
                 }
@@ -107,7 +102,6 @@ auto listenServer(socket_t sock) @safe {
                 } else {
                     uint i = addr.sizeof;
                 }
-                debug writeln("accepting");
                 socket_t connection = cast(socket_t) accept(sock, &addr, &i);
                 if (connection == -1) {
                     version (Windows) {
@@ -135,7 +129,6 @@ auto listenServer(socket_t sock) @safe {
                 }
             }
             receiver.setValue();
-            debug writeln("stopping");
         }
     }
 
