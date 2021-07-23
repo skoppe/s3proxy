@@ -1,4 +1,4 @@
-name "s3-proxy"
+name "s3proxy"
 description "S3 Proxy"
 authors "skoppe"
 copyright "Copyright © 2021, skoppe"

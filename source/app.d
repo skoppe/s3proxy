@@ -1,6 +1,6 @@
 module app;
 
-void main() {
+@safe void main() {
   import concurrency.stream : transform, take, toList;
   import concurrency.sender;
   import concurrency.stoptoken;
@@ -11,6 +11,8 @@ void main() {
   import s3proxy.proxy;
   import s3proxy.http;
   import s3proxy.server;
+  import s3proxy.config;
+  import std.file : readText;
 
   auto socket = openListeningSocket("0.0.0.0", 8080).unwrap();
   auto server = listenServer(socket);

@@ -15,6 +15,9 @@ import std.conv : to;
 
 struct Proxy {
   Config config;
+  this(Config config) @trusted nothrow shared {
+    this.config = cast(shared)config;
+  }
   Nullable!(Bucket) lookupBucket(string bucketName) @trusted nothrow shared {
     import std.algorithm : map;
     import s3proxy.utils : firstOpt;
