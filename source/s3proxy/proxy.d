@@ -15,6 +15,9 @@ import std.conv : to;
 
 struct Proxy {
   Config config;
+  this(shared Config config) @trusted nothrow shared {
+    this.config = config;
+  }
   this(Config config) @trusted nothrow shared {
     this.config = cast(shared)config;
   }
