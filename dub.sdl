@@ -11,6 +11,7 @@ dependency "urld" version="~>2.1.1"
 dependency "toml-foolery" version="~>1.0.1"
 dependency "arsd-official:cgi" version=">=10.2.0"
 dependency "arsd-official:http" version=">=10.2.0"
+dflags "-linkonce-templates" platform="ldc"
 configuration "default" {
 	targetType "executable"
 }

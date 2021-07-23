@@ -19,7 +19,7 @@ jobs:
       - name: Install D compiler
         uses: mihails-strasuns/setup-dlang@v1.0.5
         with:
-          compiler: ${{ matrix.dc }}
+          compiler: ldc-latest
 
       - uses: actions/cache@v1
         with:
@@ -47,7 +47,7 @@ jobs:
 
       - name: Build
         run: |
-          dub build
+          dub build -b release
 
       - uses: actions/upload-artifact@master
         with:

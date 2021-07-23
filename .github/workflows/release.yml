@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        dc: [dmd-latest]
+        dc: [ldc-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -33,7 +33,7 @@ jobs:
       - name: Build
         run: |
           dub test
-          dub build
+          dub build -b release
           zip --junk-paths s3proxy.zip s3proxy
 
       - name: Create Release
