@@ -14,29 +14,6 @@ enum S3Operation {
   unknown,
 }
 
-// auto guessS3Operation(ref HttpRequest req) @safe {
-//   import std.algorithm : canFind;
-
-//   if (req.method == "HEAD") {
-//     return S3Operation.info;
-//   } else if (req.method == "GET") {
-//     if (req.path[$-1] == '/')
-//       return S3Operation.list;
-//     return S3Operation.download;
-//   } else if (req.method == "PUT") {
-//     if (req.query.canFind("uploadId="))
-//        return S3Operation.uploadMultipart;
-//     else
-//       return S3Operation.upload;
-//   } else if (req.method == "POST") {
-//     if (req.query.canFind("uploads=")) {
-//       return S3Operation.uploadMultipartStart;
-//       // finish if contentLength > 0
-//     }
-//   }
-//   return S3Operation.unknown;
-// }
-
 static struct Chunk {
   ubyte[] buffer;
   size_t length;
