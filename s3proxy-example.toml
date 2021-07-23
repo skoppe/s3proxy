@@ -1,0 +1,30 @@
+[[servers]]
+name = "digitalocean"
+endpoint = "https://s3provider.com"
+key = "key"
+secret = "secret"
+region = "us-east-1"
+
+[[authentications]]
+name = "upload"
+type = "credentials
+key = "key"
+secret = "secret"
+
+[[authentications]]
+name = "client"
+type = "credentials
+key = "key"
+secret = "secret"
+
+[[buckets]]
+server = "digitalocean"
+name = "artifacts"
+
+[[buckets.0.access]]
+permissions = ["write"]
+auth = "upload"
+
+[[buckets.0.access]]
+permissions = ["read"]
+auth = "client"
