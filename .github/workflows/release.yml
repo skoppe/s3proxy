@@ -33,7 +33,7 @@ jobs:
       - name: Build
         run: |
           dub test
-          dub build --build=release
+          dub build
           zip --junk-paths s3proxy.zip s3proxy
 
       - name: Create Release
