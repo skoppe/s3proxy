@@ -3,10 +3,10 @@ import unit_threaded;
 
 int main(string[] args)
 {
-  return args.runTests!("s3proxy.concurrency",
-                        "protocol",
+  return args.runTests!("protocol",
                         "http",
                         "config",
                         "auth",
+                        "server"
                         );
 }
