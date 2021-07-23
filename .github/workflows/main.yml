@@ -45,9 +45,18 @@ jobs:
           docker-compose logs
           docker-compose -f "docker-compose.yml" down
 
+      - name: Build
+        run: |
+          dub build
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: s3proxy
+          path: s3proxy
+
   push:
     name: Push to hub.docker
-    needs: test
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master

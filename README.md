@@ -22,13 +22,13 @@ region = "us-east-1"
 
 [[authentications]]
 name = "upload"
-type = "credentials
+type = "credentials"
 key = "key"
 secret = "secret"
 
 [[authentications]]
 name = "client"
-type = "credentials
+type = "credentials"
 key = "key"
 secret = "secret"
 
