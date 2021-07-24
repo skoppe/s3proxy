@@ -23,9 +23,9 @@ module app;
   auto config = loadConfig(readText("s3proxy.toml")).parseConfig();
   auto api = shared Proxy(config);
 
-  auto runServer = server.transform((socket_t t) shared @trusted {
+  auto runServer = server.collect((socket_t t) shared @trusted {
       nursery.run(just(t).via(pool.getScheduler().schedule()).withStopToken(&api.handle));
-    }).collect(() shared {});
+    });
 
   nursery.run(runServer);
   nursery.syncWait(stopSource).assumeOk;
