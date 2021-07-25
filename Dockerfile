@@ -1,6 +1,6 @@
 FROM ubuntu
 
-RUN apt -qq update && apt -qq -y install git
+RUN apt -qq update && apt -qq -y install tzdata
 
 RUN useradd -m s3proxy
 
