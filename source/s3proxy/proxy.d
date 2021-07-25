@@ -79,7 +79,10 @@ struct Proxy {
       socket.close();
     ubyte[512] scopedBuffer;
     auto req = parseHttpRequest(socket, scopedBuffer[]);
-    endpoint(req, socket);
+    if (req.path == "/health")
+      socket.sendHttpResponse(204, ["connection": "close", "content-length": "0"]);
+    else
+      endpoint(req, socket);
   }
 }
 

@@ -81,3 +81,63 @@ auth = "test"
   nursery.run(runServer);
   whenAll(nursery, writeOne).syncWait(stopSource).assumeOk;
 }
+
+@("health")
+@trusted unittest {
+  import concurrency.stream : transform, take, toList;
+  import concurrency.sender;
+  import concurrency.stoptoken;
+  import concurrency.operations : via, then, whenAll, withStopToken;
+  import concurrency.thread;
+  import concurrency;
+  import concurrency.nursery;
+  import s3proxy.proxy;
+  import s3proxy.http;
+  import s3proxy.server;
+  import s3proxy.config;
+  import std.file : readText;
+  import concurrency.stoptoken;
+
+  auto socket = openRandomSocket();
+  auto server = listenServer(socket.handle);
+  auto pool = cast(shared)stdTaskPool(8);
+  auto stopSource = new shared StopSource();
+  auto nursery = new shared Nursery();
+
+  auto toml = `
+[[servers]]
+name = "localstack"
+endpoint = "http://0.0.0.0:4566"
+key = "test"
+secret = "test"
+[[authentications]]
+name = "test"
+type = "credentials"
+key = "test"
+secret = "test"
+[[buckets]]
+server = "localstack"
+name = "test-bucket"
+[[buckets.0.access]]
+permissions = ["read", "write"]
+auth = "test"
+`;
+  auto config = cast(shared)loadConfig(toml).parseConfig();
+  auto api = shared Proxy(config);
+
+  auto readOne = server.transform((socket_t t) shared @trusted {
+      nursery.run(just(t).via(pool.getScheduler().schedule()).withStopToken(&api.handle));
+    }).take(1).collect(() shared {}).via(ThreadSender());
+
+  auto writeOne = just(socket.port).then((ushort port) shared @trusted {
+      import requests;
+      import std.conv : to;
+      auto req = Request();
+      return req.execute("GET", "http://0.0.0.0:"~port.to!string~"/health").code;
+    });
+
+  nursery.run(readOne);
+  auto result = whenAll(nursery, writeOne).syncWait(stopSource);
+  result.assumeOk;
+  result.value.should == 204;
+}

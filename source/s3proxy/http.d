@@ -190,13 +190,17 @@ string[string] parseQueryParams(ref HttpRequest req) @safe pure {
   return params;
 }
 
-void sendHttpResponse(Range)(Socket socket, ushort code, string[string] responseHeaders, Range content) {
+void sendHttpResponse(Socket socket, ushort code, string[string] responseHeaders) {
   import std.algorithm : map, joiner;
   import std.range : only;
   import std.conv : text, to;
   socket.send("HTTP/1.1 "~code.to!string~" \r\n");
   socket.send(responseHeaders.byKeyValue.map!(kv => only(kv.key, ": ", kv.value).joiner()).joiner("\r\n").text());
   socket.send("\r\n\r\n");
+}
+
+void sendHttpResponse(Range)(Socket socket, ushort code, string[string] responseHeaders, Range content) {
+  sendHttpResponse(socket, code, responseHeaders);
   foreach(chunk; content) {
     socket.send(chunk);
   }
