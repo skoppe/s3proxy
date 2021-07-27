@@ -3,7 +3,6 @@ module app;
 @safe void main() {
   import concurrency.stream : transform, take, toList;
   import concurrency.sender;
-  import concurrency.stoptoken;
   import concurrency.operations : via, then, whenAll, withStopToken;
   import concurrency.thread;
   import concurrency;
@@ -18,7 +17,6 @@ module app;
   auto socket = openListeningSocket("0.0.0.0", 8080).unwrap();
   auto server = listenServer(socket);
   auto pool = cast(shared)stdTaskPool(8);
-  auto stopSource = new shared StopSource();
   auto nursery = new shared Nursery();
 
   auto config = loadConfig(readText("s3proxy.toml")).parseConfig();
@@ -31,5 +29,5 @@ module app;
     });
 
   nursery.run(runServer);
-  nursery.syncWait(stopSource).assumeOk;
+  nursery.syncWait().assumeOk;
 }
