@@ -62,6 +62,9 @@ import s3proxy.utils : openRandomSocket, s3Client, localstack;
   auto writeOne = just(socket.port).then((ushort port) shared @trusted {
       import requests;
       import std.conv : to;
+      import core.thread;
+      import core.time;
+      Thread.sleep(50.msecs);
       return getContent("http://0.0.0.0:"~port.to!string).data;
     });
 

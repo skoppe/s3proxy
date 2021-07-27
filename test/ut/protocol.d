@@ -105,3 +105,13 @@ pure @safe unittest {
   auto request = testRequest.parseHttpRequest();
   request.extractBucket.should == "test-bucket";
 }
+
+@("rebuffer")
+unittest {
+  import aws.aws;
+  import std.algorithm : joiner, map;
+  import std.array : array;
+  ubyte[][] data = [['h','e','l','l'],['o',' ','b','r'],['a','v','e',' '],['n','e','w',' '],['w','o','r','l'],['d']];
+  ubyte[] buffer = new ubyte[12];
+  data.rebuffer(buffer).map!(c => c.dup).array.should == [['h','e','l','l','o',' ','b','r','a','v','e',' '],['n','e','w',' ','w','o','r','l','d']];
+}

@@ -242,3 +242,48 @@ Nullable!string extractBucket(ref HttpRequest req) @trusted pure nothrow {
   import s3proxy.utils : firstOpt;
   return (cast(string)req.path).splitter('/').drop(1).assumeWontThrow.firstOpt;
 }
+
+auto rebuffer(Range)(Range range, ubyte[] buffer) {
+  import std.range;
+  import std.algorithm : min, copy;
+  struct Rebuffer {
+    Range range;
+    ubyte[] leftOver;
+    ubyte[] buffer;
+    size_t pos;
+    this(Range range, ubyte[] buffer) {
+      this.range = range;
+      this.buffer = buffer;
+      if (!this.range.empty) {
+        leftOver = this.range.front;
+        popFront();
+      }
+    }
+    bool empty() {
+      return pos == 0 && leftOver.length == 0 && range.empty;
+    }
+    auto front() {
+      return buffer[0..pos];
+    }
+    auto popFront() {
+      pos = 0;
+      while (true) {
+        if (leftOver.length > 0) {
+          size_t copyLength = min(leftOver.length, buffer.length-pos);
+          copy(leftOver[0..copyLength], buffer[pos..$]);
+          pos += copyLength;
+          leftOver = leftOver[copyLength..$];
+          if (leftOver.length > 0 || pos == buffer.length)
+            return;
+        }
+        if (range.empty)
+          return;
+        range.popFront();
+        if (range.empty)
+          return;
+        leftOver = range.front();
+      }
+    }
+  }
+  return Rebuffer(range, buffer);
+}
