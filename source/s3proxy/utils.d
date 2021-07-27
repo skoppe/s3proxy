@@ -75,3 +75,8 @@ template andThen(alias fun) {
     return t.optionalMatch!(fun);
   }
 }
+
+auto orElse(T, L)(T t, lazy L value) {
+  import mir.algebraic : match;
+  return t.match!((typeof(null))=>value,(ref t)=>t);
+}

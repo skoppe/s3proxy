@@ -114,11 +114,13 @@ void proxyList(S3 s3, ref HttpRequest req, Socket socket) @trusted {
 
 void proxyUpload(S3 s3, ref HttpRequest req, Socket socket) @trusted {
   import requests : Response;
-  import s3proxy.utils : getEnforce;
-  Response forwardUpload(Range)(Range content, size_t contentLength) {
-    string[string] headers, params;
+  import s3proxy.utils : getEnforce, orElse;
+  enum size_t chunkSize = 32*1024;
+  Response forwardUpload(Range)(Range content, size_t contentLength, string contentType) {
+    string[string] headers = ["content-type": contentType];
+    string[string] params;
     string[] additional;
-    return (cast()s3).doUpload!(typeof(content))("PUT", cast(string)req.path, params, headers, additional, content, contentLength, 512*1024);
+    return (cast()s3).doUpload!(typeof(content))("PUT", cast(string)req.path, params, headers, additional, content, contentLength, chunkSize);
   }
   size_t rawContentLength = req.contentLength.getEnforce("Missing Content-Length");
   ubyte[64] buffer;
@@ -126,13 +128,16 @@ void proxyUpload(S3 s3, ref HttpRequest req, Socket socket) @trusted {
 
   auto rawContent = contentRange(req, socket, buffer[], rawContentLength);
   auto contentLength = req.decodedContentLength;
+  auto contentType = req.getHeaderOpt!string("content-type").orElse("application/octet-stream");
 
   if (contentLength.isNull) {
-    resp = forwardUpload(rawContent, rawContentLength);
+    resp = forwardUpload(rawContent, rawContentLength, contentType);
   } else {
-    ubyte[] uploadBuffer = new ubyte[512*1024];
-    auto content = rawContent.joiner.decodeChunkedUpload(uploadBuffer).map!(c => c.data);
-    resp = forwardUpload(content, contentLength.get);
+    ubyte[] uploadBuffer = new ubyte[chunkSize];
+    ubyte[] rebuffered = new ubyte[chunkSize];
+    auto content = rawContent.joiner.decodeChunkedUpload(uploadBuffer).map!(c => c.data).rebuffer(rebuffered);
+
+    resp = forwardUpload(content, contentLength.get, contentType);
   }
 
   auto responseHeaders = resp.responseHeaders;
