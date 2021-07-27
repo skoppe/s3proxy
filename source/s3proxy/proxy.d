@@ -94,9 +94,9 @@ void proxyInfo(S3 s3, ref HttpRequest req, Socket socket) @trusted {
   auto resp = (cast()s3).doRequest("HEAD", cast(string)req.path, params, headers);
   auto responseHeaders = resp.responseHeaders;
   responseHeaders["connection"] = "close";
-  responseHeaders["transfer-encoding"] = "chunked";
+  responseHeaders.remove("content-encoding");
 
-  socket.sendHttpResponse(resp.code, responseHeaders, resp.receiveAsRange.chunkedContent(512*1024));
+  socket.sendHttpResponse(resp.code, responseHeaders);
 }
 
 void proxyList(S3 s3, ref HttpRequest req, Socket socket) @trusted {
@@ -107,6 +107,7 @@ void proxyList(S3 s3, ref HttpRequest req, Socket socket) @trusted {
   auto responseHeaders = resp.responseHeaders;
   responseHeaders["connection"] = "close";
   responseHeaders["transfer-encoding"] = "chunked";
+  responseHeaders.remove("content-encoding");
 
   socket.sendHttpResponse(resp.code, responseHeaders, resp.receiveAsRange.chunkedContent(512*1024));
 }
@@ -137,6 +138,7 @@ void proxyUpload(S3 s3, ref HttpRequest req, Socket socket) @trusted {
   auto responseHeaders = resp.responseHeaders;
   responseHeaders["connection"] = "close";
   responseHeaders["transfer-encoding"] = "chunked";
+  responseHeaders.remove("content-encoding");
 
   socket.sendHttpResponse(resp.code, responseHeaders, resp.receiveAsRange.chunkedContent(512*1024));
 }
@@ -149,9 +151,9 @@ void proxyDownload(S3 s3, ref HttpRequest req, Socket socket) @trusted {
 
   auto responseHeaders = resp.responseHeaders;
   responseHeaders["connection"] = "close";
-  responseHeaders["transfer-encoding"] = "chunked";
+  responseHeaders.remove("content-encoding");
 
-  socket.sendHttpResponse(resp.code, responseHeaders, resp.receiveAsRange.chunkedContent(512*1024));
+  socket.sendHttpResponse(resp.code, responseHeaders, resp.receiveAsRange);
 }
 
 S3 getClient(Server server) nothrow @safe {
