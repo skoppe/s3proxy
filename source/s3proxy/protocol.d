@@ -33,6 +33,7 @@ auto readChunkIntoBuffer(Range)(ref Range r, ref ubyte[] buffer, size_t expected
   import std.range : popFront, take, front;
   import std.array : array;
   import std.range : refRange;
+  import std.format : formattedRead;
   auto range = refRange(&r);
   size_t extensionStart = 0, dataStart = 0;
   size_t length;
@@ -40,7 +41,7 @@ auto readChunkIntoBuffer(Range)(ref Range r, ref ubyte[] buffer, size_t expected
     buffer[extensionStart++] = range.front();
     range.popFront();
     if (range.front == ';') {
-      length = (cast(char[])buffer[0..extensionStart]).to!size_t;
+      (cast(char[])buffer[0..extensionStart]).formattedRead("%x", length);
       dataStart = extensionStart;
       buffer[dataStart++] = ';';
       range.popFront();
@@ -62,7 +63,7 @@ auto readChunkIntoBuffer(Range)(ref Range r, ref ubyte[] buffer, size_t expected
       }
       break;
     } else if (range.front == '\r') {
-      length = (cast(char[])buffer[0..extensionStart]).to!size_t;
+      (cast(char[])buffer[0..extensionStart]).formattedRead("%x", length);
       dataStart = extensionStart;
       buffer[dataStart++] = '\r';
       buffer[dataStart++] = '\n';
