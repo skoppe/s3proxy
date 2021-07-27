@@ -144,15 +144,15 @@ Nullable!SignatureHeader extractSignatureHeader(ref HttpRequest req) @safe pure 
   import s3proxy.http : getHeaderOpt;
   import mir.algebraic : optionalMatch;
   import std.algorithm : findSplitAfter, until, findSplit, each, map;
-  import std.string : split;
+  import std.string : split, strip;
   import std.conv : text;
   import s3proxy.utils : andThen, ifThrown;
   return req.getHeaderOpt!string("authorization").andThen!((string header){
       auto firstSplit = header.findSplit(" ");
       auto sh = SignatureHeader();
       sh.algorithm = firstSplit[0];
-      firstSplit[2].split(", ").map!(s => s.split("=")).each!((kv){
-          switch (kv[0]) {
+      firstSplit[2].split(",").map!(s => s.split("=")).each!((kv){
+          switch (strip(kv[0])) {
           case "Credential": {
             auto parts = kv[1].split("/");
             sh.credential = Credential(parts[0], parts[1], parts[2], parts[3], parts[4]);
