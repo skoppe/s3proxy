@@ -2,7 +2,6 @@ module s3proxy.server;
 
 public import std.socket : socket_t;
 import concurrency.stoptoken : StopToken, onStop;
-import arsd.cgi : Cgi;
 
 auto listenServer(string host, ushort port) @safe {
     return listenServer(openListeningSocket(host,port).trustedGet);
