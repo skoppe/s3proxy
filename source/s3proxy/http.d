@@ -217,8 +217,11 @@ void sendHttpResponse(Socket socket, ushort code, string[string] responseHeaders
   socket.send("\r\n\r\n");
 }
 
-void sendHttpResponse(Range)(Socket socket, ushort code, string[string] responseHeaders, Range content) {
+void sendHttpResponse(Range)(Socket socket, ushort code, string[string] responseHeaders, Range content) @trusted {
   sendHttpResponse(socket, code, responseHeaders);
+  static if (is(Range == T[], T))
+    socket.send(content);
+  else
   foreach(chunk; content) {
     socket.send(chunk);
   }

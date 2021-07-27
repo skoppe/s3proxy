@@ -227,11 +227,12 @@ void sendError(Socket socket, Exception e, string resource, string requestId) @s
 }
 
 void sendError(Socket socket, ushort statusCode, string code, string message, string resource, string requestId) @safe {
+  import s3proxy.http;
+  import std.conv : to;
   import std.format : format;
   string content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Error><Code>%s</Code><Message>%s</Message><Resource>%s</Resource><RequestId>%s</RequestId></Error>".format(code, message, resource, requestId);
 
-  string response = "HTTP/1.1 %d \r\nConnection: close\r\nContent-Type: application/xml\r\nContent-Length: %d\r\n\r\n%s".format(statusCode, content.length, content);
-  socket.send(response);
+  socket.sendHttpResponse(statusCode, ["connection":"close","content-type":"application/xml","content-length":content.length.to!string], content);
 }
 
 Nullable!string extractBucket(ref HttpRequest req) @trusted pure nothrow {
