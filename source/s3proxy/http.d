@@ -23,6 +23,22 @@ template sliceUntil(alias fun) {
 
 struct HttpRequest
 {
+  void toString(void delegate(const(char[])) @safe sink) @safe {
+    sink("HttpRequest(");
+    sink(method);
+    sink(",");
+    sink(uri);
+    sink(",");
+    sink(statusMsg);
+    foreach(idx, h; m_headers[0.. m_headersLength]) {
+      sink(h.name);
+      sink(": ");
+      sink(h.value);
+      if (idx < m_headersLength-1)
+        sink(", ");
+    }
+    sink(")");
+  }
   @safe pure nothrow @nogc:
   void onMethod(const(char)[] method) { this.method = method; }
   void onUri(const(char)[] uri) {
@@ -190,10 +206,12 @@ string[string] parseQueryParams(ref HttpRequest req) @safe pure {
   return params;
 }
 
-void sendHttpResponse(Socket socket, ushort code, string[string] responseHeaders) {
+void sendHttpResponse(Socket socket, ushort code, string[string] responseHeaders) @safe {
   import std.algorithm : map, joiner;
   import std.range : only;
   import std.conv : text, to;
+  import std.experimental.logger;
+  trace("HttpResponse(", code, ", ", responseHeaders,")");
   socket.send("HTTP/1.1 "~code.to!string~" \r\n");
   socket.send(responseHeaders.byKeyValue.map!(kv => only(kv.key, ": ", kv.value).joiner()).joiner("\r\n").text());
   socket.send("\r\n\r\n");

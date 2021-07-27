@@ -1,9 +1,10 @@
 module s3proxy.config;
 
 import mir.algebraic : Algebraic;
+import std.experimental.logger : LogLevel;
 
 struct Server {
-  string name, endpoint, key, secret, region;
+  string name, endpoint, key, secret, region = "us-east-1";
 }
 
 struct RawAuthentication {
@@ -26,6 +27,7 @@ struct RawBucket {
 }
 
 struct RawConfig {
+  LogLevel logging = LogLevel.error;
   Server[] servers;
   RawAuthentication[] authentications;
   RawBucket[] buckets;
@@ -61,6 +63,7 @@ struct Bucket {
 }
 
 struct Config {
+  LogLevel logging;
   Bucket[] buckets;
 }
 
@@ -75,7 +78,7 @@ Config parseConfig(RawConfig raw) @safe pure {
         }).array();
       return Bucket(b.name, server, auths);
     }).array();
-  return Config(buckets);
+  return Config(raw.logging, buckets);
 }
 
 Server locateServer(ref RawConfig config, string name) @safe pure {

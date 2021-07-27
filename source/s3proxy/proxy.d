@@ -12,6 +12,7 @@ import std.range : front, only;
 import std.string : toLower;
 import concurrency.stoptoken : StopToken;
 import std.conv : to;
+import std.experimental.logger;
 
 struct Proxy {
   Config config;
@@ -68,7 +69,7 @@ struct Proxy {
           break;
         }
     } catch (Exception e) {
-      // TODO: log it;
+      error(e).ignoreException;
       return;
     }
     socket.sendError(501, "NotImplemented", "Operation not implemented", cast(string)req.path, "0123456789").ignoreException;
@@ -79,6 +80,7 @@ struct Proxy {
       socket.close();
     ubyte[512] scopedBuffer;
     auto req = parseHttpRequest(socket, scopedBuffer[]);
+    trace(req);
     if (req.path == "/health")
       socket.sendHttpResponse(204, ["connection": "close", "content-length": "0"]);
     else
