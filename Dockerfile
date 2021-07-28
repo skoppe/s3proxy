@@ -1,6 +1,6 @@
 FROM ubuntu
 
-RUN apt -qq update && apt -qq -y install tzdata openssl
+RUN apt -qq update && apt -qq -y install tzdata openssl ca-certificates
 
 RUN useradd -m s3proxy
 
