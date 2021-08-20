@@ -7,6 +7,7 @@ int main(string[] args)
                         "http",
                         "config",
                         "auth",
-                        "server"
+                        "server",
+                        "jwt"
                         );
 }

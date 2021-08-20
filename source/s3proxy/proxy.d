@@ -4,6 +4,7 @@ import aws.s3;
 import aws.aws : chunkedContent;
 import s3proxy.http;
 import s3proxy.config;
+import s3proxy.jwt;
 import std.socket;
 import s3proxy.protocol;
 import s3proxy.utils : ignoreException;
@@ -16,6 +17,7 @@ import std.experimental.logger;
 
 struct Proxy {
   Config config;
+  JWKSCache jwksCache;
   this(shared Config config) @trusted nothrow shared {
     this.config = config;
   }
@@ -83,9 +85,62 @@ struct Proxy {
     trace(req);
     if (req.path == "/health")
       socket.sendHttpResponse(204, ["connection": "close", "content-length": "0"]);
+    else if (req.path == "/auth")
+      generateCredentials(config, jwksCache, req, socket);
     else
       endpoint(req, socket);
   }
+}
+
+void generateCredentials(ref shared Config config, ref shared JWKSCache jwksCache, ref HttpRequest req, Socket socket) @trusted nothrow {
+  import asdf;
+  import s3proxy.utils : ignoreException;
+  try {
+    string msg = generateCredentials(cast(Config)config, jwksCache, req.parseQueryParams()).serializeToJson();
+    socket.sendHttpResponse(200, ["content-type": "application/json", "connection": "close", "content-length": msg.length.to!string ], msg);
+  } catch (Exception e) {
+    socket.sendTextError(401, e.msg).ignoreException();
+  }
+}
+
+auto generateCredentials(ref Config config, ref shared JWKSCache jwksCache, string[string] params) @safe {
+  auto token = "token" in params;
+  if (token is null) {
+    throw new Exception("missing token");
+  }
+  if (auto provider = "provider" in params) {
+    // this is an oauth request
+  } else {
+    return generateOIDCCredentials(config, jwksCache, *token);
+  }
+  throw new Exception("invalid request");
+}
+
+struct OIDCProviderJWTItem {
+  import s3proxy.auth : OIDCAuthenticationProvider;
+  OIDCAuthenticationProvider provider;
+  JWT jwt;
+}
+
+auto generateOIDCCredentials(JWKSCache)(ref Config config, ref JWKSCache jwksCache, string token) @trusted {
+  import std.algorithm : filter;
+  import s3proxy.utils : firstEnforce;
+  RawJWT raw = decodeRawJwt(token);
+  string issuer = raw.payload["iss"].str;
+  auto item = config.oidcProviders
+    .filter!(p => p.issuer == issuer)
+    .map!((provider){
+          JWKS keys = jwksCache.get(issuer);
+          JWT jwt = raw.validateRawJwtSignature(keys).validateJwt();
+          return OIDCProviderJWTItem(provider, jwt);
+      })
+    .filter!((item){
+        if (item.provider.scopes.length == 0)
+          return true;
+        return item.jwt.checkScopes(item.provider.scopes);
+      })
+    .firstEnforce("invalid token");
+  return item.provider.auth.generateIdentity;
 }
 
 void proxyInfo(S3 s3, ref HttpRequest req, Socket socket) @trusted {

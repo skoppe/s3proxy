@@ -235,6 +235,14 @@ void sendS3Error(Socket socket, ushort statusCode, string code, string message, 
   socket.sendHttpResponse(statusCode, ["connection":"close","content-type":"application/xml","content-length":content.length.to!string], content);
 }
 
+void sendTextError(Socket socket, ushort statusCode, string message) @safe {
+  import s3proxy.http;
+  import std.conv : to;
+  import std.format : format;
+
+  socket.sendHttpResponse(statusCode, ["connection":"close","content-type":"text/plain","content-length":message.length.to!string], message);
+}
+
 Nullable!string extractBucket(ref HttpRequest req) @trusted pure nothrow {
   import std.algorithm : splitter;
   import std.range : drop;

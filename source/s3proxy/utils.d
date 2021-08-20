@@ -3,12 +3,19 @@ module s3proxy.utils;
 import mir.algebraic : Nullable, Algebraic;
 import aws.s3 : S3;
 
-auto firstOpt(Range)(Range range) @trusted pure nothrow {
+auto firstOpt(Range)(Range range) @trusted nothrow {
   import std.range;
   import std.exception : assumeWontThrow;
   if (range.empty)
     return Nullable!(ElementType!Range).init;
   return Nullable!(ElementType!Range)(range.front.assumeWontThrow);
+}
+
+auto firstEnforce(Range)(Range range, string msg) @trusted {
+  import std.range;
+  if (range.empty)
+    throw new Exception(msg);
+  return range.front;
 }
 
 auto ifThrown(L, P)(lazy L main, P second) nothrow {
