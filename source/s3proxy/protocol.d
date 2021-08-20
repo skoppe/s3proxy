@@ -222,11 +222,11 @@ auto guessS3Operation(ref S3RequestInfo req) @safe pure {
 }
 
 import std.socket : Socket;
-void sendError(Socket socket, Exception e, string resource, string requestId) @safe {
-  socket.sendError(500, "InternalError", e.msg, resource, requestId);
+void sendS3Error(Socket socket, Exception e, string resource, string requestId) @safe {
+  socket.sendS3Error(500, "InternalError", e.msg, resource, requestId);
 }
 
-void sendError(Socket socket, ushort statusCode, string code, string message, string resource, string requestId) @safe {
+void sendS3Error(Socket socket, ushort statusCode, string code, string message, string resource, string requestId) @safe {
   import s3proxy.http;
   import std.conv : to;
   import std.format : format;

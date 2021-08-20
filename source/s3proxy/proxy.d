@@ -33,24 +33,24 @@ struct Proxy {
 
     auto bucketName = req.extractBucket();
     if (bucketName.isNull) {
-      socket.sendError(501, "NotImplemented", "List buckets not implemented", cast(string)req.path, "0123456789").ignoreException;
+      socket.sendS3Error(501, "NotImplemented", "List buckets not implemented", cast(string)req.path, "0123456789").ignoreException;
       return;
     }
 
     auto bucket = lookupBucket(bucketName.get);
     if (bucket.isNull) {
-      socket.sendError(404, "NoSuchBucket", "No such bucket: "~bucketName.get, cast(string)req.path, "0123456789").ignoreException;
+      socket.sendS3Error(404, "NoSuchBucket", "No such bucket: "~bucketName.get, cast(string)req.path, "0123456789").ignoreException;
       return;
     }
 
     auto info = extractRequestInfo(req);
     if (info.isNull) {
-      socket.sendError(400, "InvalidArgument", "Invalid request", cast(string)req.path, "0123456789").ignoreException;
+      socket.sendS3Error(400, "InvalidArgument", "Invalid request", cast(string)req.path, "0123456789").ignoreException;
       return;
     }
 
     if (!authenticateRequest(info.get, bucket.get.access)) {
-      socket.sendError(401, "AccessDenied", "Access denied", cast(string)req.path, "0123456789").ignoreException;
+      socket.sendS3Error(401, "AccessDenied", "Access denied", cast(string)req.path, "0123456789").ignoreException;
       return;
     }
 
@@ -72,7 +72,7 @@ struct Proxy {
       error(e).ignoreException;
       return;
     }
-    socket.sendError(501, "NotImplemented", "Operation not implemented", cast(string)req.path, "0123456789").ignoreException;
+    socket.sendS3Error(501, "NotImplemented", "Operation not implemented", cast(string)req.path, "0123456789").ignoreException;
   }
   void handle(StopToken stopToken, socket_t t) @trusted shared {
     auto socket = new Socket(t, AddressFamily.INET);
