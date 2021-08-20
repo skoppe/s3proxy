@@ -13,34 +13,39 @@ Put a `s3proxy.toml` in the same folder and run the binary.
 ### Example config
 
 ```toml
-[[servers]]
+[[server]]
 name = "digitalocean"
 endpoint = "https://s3provider.com"
 key = "key"
 secret = "secret"
 region = "us-east-1"
 
-[[authentications]]
+[[authentication]]
 name = "upload"
 type = "credentials"
 key = "key"
 secret = "secret"
 
-[[authentications]]
+[[authentication]]
 name = "client"
-type = "credentials"
-key = "key"
+type = "web"
 secret = "secret"
+expires = 3600
 
-[[buckets]]
+[[oauth]]
+auth = "client"
+endpoint = "https://git.example.com/oauth/token/info"
+scopes = ["list", "of", "required", "scopes"]
+
+[[bucket]]
 server = "digitalocean"
 name = "artifacts"
 
-[[buckets.0.access]]
+[[bucket.0.access]]
 permissions = ["write"]
 auth = "upload"
 
-[[buckets.0.access]]
+[[bucket.0.access]]
 permissions = ["read"]
 auth = "client"
 ```

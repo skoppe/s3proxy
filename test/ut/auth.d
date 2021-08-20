@@ -16,37 +16,37 @@ S3RequestInfo validListRequest() @safe pure nothrow {
 
 @("authenticateRequest.list.valid")
 pure @safe unittest {
-  auto auths = [Authentication([Permission.read, Permission.write], Authenticator(CredentialAuthenticator("auth","test","test")))];
+  auto auths = [Access([Permission.read, Permission.write], Authentication(CredentialAuthentication("auth","test","test")))];
 
   authenticateRequest(validListRequest, auths).should == true;
 }
 
 @("authenticateRequest.list.no-read")
 pure @safe unittest {
-  auto auths = [Authentication([Permission.write], Authenticator(CredentialAuthenticator("auth","test","test")))];
+  auto auths = [Access([Permission.write], Authentication(CredentialAuthentication("auth","test","test")))];
 
   authenticateRequest(validListRequest, auths).should == false;
 }
 
 @("authenticateRequest.list.wrong-user")
 pure @safe unittest {
-  auto auths = [Authentication([Permission.write], Authenticator(CredentialAuthenticator("auth","wrong","test")))];
+  auto auths = [Access([Permission.write], Authentication(CredentialAuthentication("auth","wrong","test")))];
 
   authenticateRequest(validListRequest, auths).should == false;
 }
 
 @("authenticateRequest.list.wrong-pass")
 pure @safe unittest {
-  auto auths = [Authentication([Permission.write], Authenticator(CredentialAuthenticator("auth","test","wrong")))];
+  auto auths = [Access([Permission.write], Authentication(CredentialAuthentication("auth","test","wrong")))];
 
   authenticateRequest(validListRequest, auths).should == false;
 }
 
 @("hasPermissionFor")
 pure @safe unittest {
-  auto writeonly = Authentication([Permission.write]);
-  auto readonly = Authentication([Permission.read]);
-  auto both = Authentication([Permission.write, Permission.read]);
+  auto writeonly = Access([Permission.write]);
+  auto readonly = Access([Permission.read]);
+  auto both = Access([Permission.write, Permission.read]);
   writeonly.hasPermissionFor(S3Operation.info).should == false;
   writeonly.hasPermissionFor(S3Operation.list).should == false;
   writeonly.hasPermissionFor(S3Operation.download).should == false;
@@ -73,4 +73,71 @@ pure @safe unittest {
   both.hasPermissionFor(S3Operation.uploadMultipartFinish).should == true;
   both.hasPermissionFor(S3Operation.uploadMultipart).should == true;
   both.hasPermissionFor(S3Operation.unknown).should == false;
+}
+
+@("KeyEncoder")
+unittest {
+  import std.range : repeat;
+  ubyte v = 255;
+  v.repeat(5).keyEncoder.should == ['7','7','7','7','7','7','7','7'];
+  ubyte[] arr = cast(ubyte[])[0b11111000,0b00111110,0b00001111,0b10000011,0b11100000];
+  arr.keyEncoder.should == ['7','A','7','A','7','A','7','A'];
+  arr = cast(ubyte[])[0b00000111,0b11000001,0b11110000,0b01111100,0b00011111];
+  arr.keyEncoder.should == ['A','7','A','7','A','7','A','7'];
+}
+
+@("generateKey")
+unittest {
+  import std.algorithm : all;
+  auto key = WebIdentityAuthentication("bla", "ev", 10).generateKey();
+  key.prefix.should == "WEBA";
+  key.salt[].should.not == WebIdentityAuthentication.WebIdentityKey.salt.init;
+  key.expiry[].should.not == WebIdentityAuthentication.WebIdentityKey.expiry.init;
+}
+
+@("generateSecret")
+unittest {
+  auto iden = WebIdentityAuthentication.WebIdentityKey([10,11,12,13,14,15],[120,121,122,124]);
+  WebIdentityAuthentication("test","secret").generateSecret(iden).should == "jcFGKJ6pIGZ1KrTzMlI1XOUKwuMFyUuMGlzoTpeavge53nM6/9K7t0jKlTO2";
+  WebIdentityAuthentication("test","secret2").generateSecret(iden).should == "8d4CVkfWlTJrN8mFWYnGKgnuEqAZ7jBgqQWYZXIEP05pPsmGRopA3L4kJmU/";
+  WebIdentityAuthentication("test2","secret").generateSecret(iden).should == "jcFGKJ6pIGZ1KrTzMlI1XOUKwuMFyUuMGlzoTpeavge53nM6/9K7t0jKlTO2";
+}
+
+@("parseKey")
+unittest {
+  auto key = WebIdentityAuthentication.parseKey("WEBABIFQYDIOB54HS6T4");
+  key.salt.should == [10,11,12,13,14,15];
+  key.expiry.should == [120,121,122,124];
+  WebIdentityAuthentication("test","secret").generateSecret(key).should == "jcFGKJ6pIGZ1KrTzMlI1XOUKwuMFyUuMGlzoTpeavge53nM6/9K7t0jKlTO2";
+}
+
+@("generateIdentity")
+unittest {
+  auto a = WebIdentityAuthentication("test","secret").generateIdentity;
+  auto b = WebIdentityAuthentication("test","secret").generateIdentity;
+  a.should.not == b;
+}
+
+@("WebIdentityKey.toString")
+unittest {
+  WebIdentityAuthentication.WebIdentityKey([10,11,12,13,14,15],[120,121,122,124]).toString.should == "WEBABIFQYDIOB54HS6T4";
+}
+
+@("keyCharToByte")
+unittest {
+  'A'.keyCharToByte.should == 0;
+  'F'.keyCharToByte.should == 5;
+  'Z'.keyCharToByte.should == 25;
+  '2'.keyCharToByte.should == 26;
+  '3'.keyCharToByte.should == 27;
+  '4'.keyCharToByte.should == 28;
+  '5'.keyCharToByte.should == 29;
+  '6'.keyCharToByte.should == 30;
+  '7'.keyCharToByte.should == 31;
+}
+
+@("KeyDecoder")
+unittest {
+  import std.string : representation;
+  "BIFQYDIOB54HS6T4".representation!(immutable(char)).keyDecoder.should == [10,11,12,13,14,15,120,121,122,124];
 }

@@ -12,6 +12,7 @@
 		"httparsed": "1.2.0",
 		"ikod-containers": "0.0.20",
 		"mir-core": "1.1.75",
+		"pbkdf2": "0.1.3",
 		"pegged": "0.4.5",
 		"requests": "2.0.1",
 		"silly": "1.1.1",

@@ -49,7 +49,7 @@ struct Proxy {
       return;
     }
 
-    if (!authenticateRequest(info.get, bucket.get.auth)) {
+    if (!authenticateRequest(info.get, bucket.get.access)) {
       socket.sendError(401, "AccessDenied", "Access denied", cast(string)req.path, "0123456789").ignoreException;
       return;
     }

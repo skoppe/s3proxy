@@ -28,20 +28,20 @@ import unit_threaded;
   auto nursery = new shared Nursery();
 
   auto toml = `
-[[servers]]
+[[server]]
 name = "localstack"
 endpoint = "http://0.0.0.0:4566"
 key = "test"
 secret = "test"
-[[authentications]]
+[[authentication]]
 name = "test"
 type = "credentials"
 key = "test"
 secret = "test"
-[[buckets]]
+[[bucket]]
 server = "localstack"
 name = "test-bucket"
-[[buckets.0.access]]
+[[bucket.0.access]]
 permissions = ["read", "write"]
 auth = "test"
 `;
@@ -105,20 +105,20 @@ auth = "test"
   auto nursery = new shared Nursery();
 
   auto toml = `
-[[servers]]
+[[server]]
 name = "localstack"
 endpoint = "http://0.0.0.0:4566"
 key = "test"
 secret = "test"
-[[authentications]]
+[[authentication]]
 name = "test"
 type = "credentials"
 key = "test"
 secret = "test"
-[[buckets]]
+[[bucket]]
 server = "localstack"
 name = "test-bucket"
-[[buckets.0.access]]
+[[bucket.0.access]]
 permissions = ["read", "write"]
 auth = "test"
 `;

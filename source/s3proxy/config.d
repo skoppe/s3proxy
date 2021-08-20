@@ -2,6 +2,8 @@ module s3proxy.config;
 
 import mir.algebraic : Algebraic;
 import std.experimental.logger : LogLevel;
+import s3proxy.auth;
+import toml_foolery : TomlName;
 
 struct Server {
   string name, endpoint, key, secret, region = "us-east-1";
@@ -9,11 +11,7 @@ struct Server {
 
 struct RawAuthentication {
   string name, type, key, secret;
-}
-
-enum Permission : string {
-  read = "read",
-  write = "write"
+  ulong expires;
 }
 
 struct BucketAccess {
@@ -26,11 +24,30 @@ struct RawBucket {
   BucketAccess[] access;
 }
 
+struct RawOAuthAuthenticationProvider {
+  string endpoint;
+  string[] scopes;
+  string auth;
+}
+
+struct RawOIDCAuthenticationProvider {
+  string issuer;
+  string[] scopes;
+  string auth;
+}
+
 struct RawConfig {
   LogLevel logging = LogLevel.error;
+  @TomlName("server")
   Server[] servers;
+  @TomlName("authentication")
   RawAuthentication[] authentications;
+  @TomlName("bucket")
   RawBucket[] buckets;
+  @TomlName("oauth")
+  RawOAuthAuthenticationProvider[] oauthProviders;
+  @TomlName("oidc")
+  RawOIDCAuthenticationProvider[] oidcProviders;
 }
 
 RawConfig loadConfig(string content) @trusted {
@@ -38,47 +55,51 @@ RawConfig loadConfig(string content) @trusted {
   return content.parseToml!RawConfig;
 }
 
-struct CredentialAuthenticator {
-  enum type = "credentials";
-  string name, key, secret;
-  static typeof(this) from(RawAuthentication auth) @safe pure {
-    return CredentialAuthenticator(auth.name, auth.key, auth.secret);
-  }
-  bool matches(string key) @safe pure {
-    return this.key == key;
-  }
-}
-
-alias Authenticator = Algebraic!(CredentialAuthenticator);
-
-struct Authentication {
-  Permission[] permissions;
-  Authenticator authenticator;
-}
-
 struct Bucket {
   string name;
   Server server;
-  Authentication[] auth;
+  Access[] access;
 }
 
 struct Config {
   LogLevel logging;
   Bucket[] buckets;
+  OAuthAuthenticationProvider[] oauthProviders;
+  OIDCAuthenticationProvider[] oidcProviders;
 }
 
-Config parseConfig(RawConfig raw) @safe pure {
+Config parseConfig(RawConfig raw) @safe {
   import std.algorithm : map;
   import std.array : array;
   auto buckets = raw.buckets.map!((b){
       auto server = raw.locateServer(b.server);
-      auto auths = b.access.map!((a){
-          auto authenticator = raw.locateAuth(a.auth).decodeAuth();
-          return Authentication(a.permissions, authenticator);
+      auto accesses = b.access.map!((a){
+          auto authentication = raw.locateAuth(a.auth).decodeAuth();
+          return Access(a.permissions, authentication);
         }).array();
-      return Bucket(b.name, server, auths);
+      return Bucket(b.name, server, accesses);
     }).array();
-  return Config(raw.logging, buckets);
+  auto oauthProviders = raw.oauthProviders.map!((provider){
+      auto auth = raw.locateAuth(provider.auth).decodeAuth;
+      return OAuthAuthenticationProvider(provider.endpoint, provider.scopes, auth.get!WebIdentityAuthentication);
+    }).array();
+  auto oidcProviders = raw.oidcProviders.map!((provider){
+      auto auth = raw.locateAuth(provider.auth).decodeAuth;
+      return OIDCAuthenticationProvider(provider.issuer, provider.scopes, auth.get!WebIdentityAuthentication);
+    }).array();
+  return Config(raw.logging, buckets, oauthProviders, oidcProviders);
+}
+
+CredentialAuthentication parseAuth(T)(RawAuthentication auth) if (is(T == CredentialAuthentication)) {
+  return CredentialAuthentication(auth.name, auth.key, auth.secret);
+}
+
+WebIdentityAuthentication parseAuth(T)(RawAuthentication auth) if (is(T == WebIdentityAuthentication)) {
+  return WebIdentityAuthentication(auth.name, auth.secret, auth.expires);
+}
+
+OAuthAuthenticationProvider parseAuthProvider(T)(RawAuthenticationProvider provider, Authentication auth) @safe pure if (is(T == OAuthAuthenticationProvider)) {
+  return OAuthAuthenticationProvider(provider.endpoint, provider.scopes, auth);
 }
 
 Server locateServer(ref RawConfig config, string name) @safe pure {
@@ -103,10 +124,10 @@ RawAuthentication locateAuth(ref RawConfig config, string name) @safe pure {
   return range.front();
 }
 
-Authenticator decodeAuth(RawAuthentication auth) @safe pure {
-  static foreach(T; Authenticator.AllowedTypes) {
+Authentication decodeAuth(RawAuthentication auth) @safe {
+  static foreach(T; Authentication.AllowedTypes) {
     if (T.type == auth.type) {
-      return Authenticator(T.from(auth));
+      return Authentication(auth.parseAuth!T);
     }
   }
   if (auth.type == "" || auth.type == null)

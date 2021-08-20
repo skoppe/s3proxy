@@ -1,11 +1,13 @@
 module config;
 
 import s3proxy.config;
+import s3proxy.auth;
 import unit_threaded;
+import mir.algebraic;
 
 @("servers")
 @safe unittest {
-  string content = `[[servers]]
+  string content = `[[server]]
 name = "digitalocean"
 endpoint = "asdf"
 key = "asdf"
@@ -17,7 +19,7 @@ secret = "asdf"
 
 @("authentications")
 @safe unittest {
-  string content =`[[authentications]]
+  string content =`[[authentication]]
 name = "ci-upload"
 type = "credentials"
 key = "asdf"
@@ -30,15 +32,15 @@ secret = "s"
 
 @("authentications")
 @safe unittest {
-  string content =`[[buckets]]
+  string content =`[[bucket]]
 server = "digitalocean"
 name = "sil-artifacts"
 
-[[buckets.0.access]]
+[[bucket.0.access]]
 permissions = ["read", "write"]
 auth = "ci-upload"
 
-[[buckets.0.access]]
+[[bucket.0.access]]
 permissions = ["read"]
 auth = "sil-download"`;
 
@@ -51,12 +53,12 @@ auth = "sil-download"`;
 
 @("parse.server.valid")
 @safe unittest {
-  string content = `[[servers]]
+  string content = `[[server]]
 name = "digitalocean"
 endpoint = "asdf"
 key = "asdf"
 secret = "asdf"
-[[buckets]]
+[[bucket]]
 server = "digitalocean"
 name = "sil-artifacts"`;
   auto config = content.loadConfig().parseConfig();
@@ -66,57 +68,57 @@ name = "sil-artifacts"`;
 
 @("parse.server.notfound")
 @safe unittest {
-  string content = `[[servers]]
+  string content = `[[server]]
 name = "digitalocean2"
-[[buckets]]
+[[bucket]]
 server = "digitalocean"`;
   content.loadConfig().parseConfig().shouldThrowWithMessage("Config error, cannot find server 'digitalocean'");
 }
 
 @("parse.server.duplicate")
 @safe unittest {
-  string content = `[[servers]]
+  string content = `[[server]]
 name = "digitalocean"
-[[servers]]
+[[server]]
 name = "digitalocean"
-[[buckets]]
+[[bucket]]
 server = "digitalocean"`;
   content.loadConfig().parseConfig().shouldThrowWithMessage("Config error, duplicate servers 'digitalocean'");
 }
 
 @("authentications.valid")
 @safe unittest {
-  string content =`[[servers]]
+  string content =`[[server]]
 name = "digitalocean"
-[[authentications]]
+[[authentication]]
 type = "credentials"
 name = "ci-upload"
 key = "key"
-[[buckets]]
+[[bucket]]
 server = "digitalocean"
 name = "sil-artifacts"
-[[buckets.0.access]]
+[[bucket.0.access]]
 permissions = ["read", "write"]
 auth = "ci-upload"`;
 
   auto config = content.loadConfig().parseConfig();
   config.buckets.length.should == 1;
-  config.buckets[0].auth.length.should == 1;
-  config.buckets[0].auth[0].permissions.should == [Permission.read, Permission.write];
-  auto auth = config.buckets[0].auth[0].authenticator.trustedGet!CredentialAuthenticator;
+  config.buckets[0].access.length.should == 1;
+  config.buckets[0].access[0].permissions.should == [Permission.read, Permission.write];
+  auto auth = config.buckets[0].access[0].authentication.trustedGet!CredentialAuthentication;
   auth.key.should == "key";
 }
 
 @("authentications.no-type")
 @safe unittest {
-  string content =`[[servers]]
+  string content =`[[server]]
 name = "digitalocean"
-[[authentications]]
+[[authentication]]
 name = "ci-upload"
-[[buckets]]
+[[bucket]]
 server = "digitalocean"
 name = "sil-artifacts"
-[[buckets.0.access]]
+[[bucket.0.access]]
 permissions = ["read", "write"]
 auth = "ci-upload"`;
 
@@ -125,12 +127,12 @@ auth = "ci-upload"`;
 
 @("authentications.notfound")
 @safe unittest {
-  string content =`[[servers]]
+  string content =`[[server]]
 name = "digitalocean"
-[[buckets]]
+[[bucket]]
 server = "digitalocean"
 name = "sil-artifacts"
-[[buckets.0.access]]
+[[bucket.0.access]]
 permissions = ["read", "write"]
 auth = "ci-upload"`;
 
@@ -139,18 +141,43 @@ auth = "ci-upload"`;
 
 @("authentications.duplicate")
 @safe unittest {
-  string content =`[[servers]]
+  string content =`[[server]]
 name = "digitalocean"
-[[authentications]]
+[[authentication]]
 name = "ci-upload"
-[[authentications]]
+[[authentication]]
 name = "ci-upload"
-[[buckets]]
+[[bucket]]
 server = "digitalocean"
 name = "sil-artifacts"
-[[buckets.0.access]]
+[[bucket.0.access]]
 permissions = ["read", "write"]
 auth = "ci-upload"`;
 
   content.loadConfig().parseConfig().shouldThrowWithMessage("Config error, duplicate authentication 'ci-upload'");
+}
+
+@("oauth")
+@safe unittest {
+  string content =`[[oauth]]
+endpoint = "https://git.example.com/oauth/token/info"
+scopes = ["api"]
+auth = "ci-upload"
+[[authentication]]
+type = "web"
+name = "ci-upload"
+secret = "secret"
+expires = 3600`;
+
+  auto config = content.loadConfig().parseConfig();
+  config.oauthProviders.length.should == 1;
+  config.oauthProviders[0].tryMatch!((OAuthAuthenticationProvider oauth){
+      oauth.endpoint.should == "https://git.example.com/oauth/token/info";
+      oauth.scopes.should == ["api"];
+      oauth.auth.tryMatch!((WebIdentityAuthentication auth){
+          auth.name.should == "ci-upload";
+          auth.secret.should == "secret";
+          auth.expires.should == 3600;
+        });
+    });
 }
