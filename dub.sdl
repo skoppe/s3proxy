@@ -16,7 +16,7 @@ configuration "default" {
 }
 configuration "unittest" {
 	dependency "unit-threaded" version=">=1.0.15"
-	dependency "dshould" version="*" // stupid toml require dshould in unittest mode
+	dependency "dshould" version=">=0.0.0"
 	targetType "executable"
 	targetName "ut"
 	mainSourceFile "test/ut/ut_runner.d"
@@ -26,7 +26,7 @@ configuration "unittest" {
 }
 configuration "it" {
 	dependency "unit-threaded" version=">=0.0.0"
-	dependency "dshould" version="*" // stupid toml require dshould in unittest mode
+	dependency "dshould" version=">=0.0.0"
 	targetType "executable"
 	targetName "it"
 	mainSourceFile "test/it/it_runner.d"
