@@ -34,6 +34,9 @@ struct CredentialAuthentication {
   string getSecret(string key) @safe pure {
     return secret;
   }
+  bool isNotExpired(string key) @safe pure {
+    return true;
+  }
 }
 
 alias Authentication = Algebraic!(CredentialAuthentication, WebIdentityAuthentication);
@@ -211,6 +214,13 @@ struct WebIdentityAuthentication {
     import kdf.pbkdf2;
     return Base64.encode(pbkdf2!SHA1(key.toString.representation, secret.representation, 4096, 45));
   }
+  bool isNotExpired(string key) @safe {
+    import std.datetime : Clock;
+    import std.bitmanip : littleEndianToNative;
+    long deadline = cast(long)parseKey(key).expiry.littleEndianToNative!uint;
+    long unixtime = Clock.currTime.roll!"seconds"(expires).toUnixTime!long;
+    return deadline > unixtime;
+  }
   string getSecret(string key) @safe pure {
     return generateSecret(parseKey(key));
   }
@@ -226,6 +236,7 @@ bool authenticateRequest(ref S3RequestInfo req, Access[] auths) @safe pure nothr
   auto arr = auths.dup();
 
   arr.runCheck!(matchesAccessKey)(req.signatureHeader.credential.accessKey);
+  arr.runCheck!(notExpired)(req.signatureHeader.credential.accessKey);
   arr.runCheck!(hasPermissionFor)(req.guessS3Operation);
   arr.runCheck!(validateSecretKey)(req);
 
@@ -243,6 +254,10 @@ template runCheck(alias fun) {
 
 bool matchesAccessKey(Access auth, string accessKey) @safe pure {
   return auth.authentication.matches(accessKey);
+}
+
+bool notExpired(Access auth, string accessKey) @safe {
+  return auth.authentication.isNotExpired(accessKey);
 }
 
 bool hasPermissionFor(Access auth, S3Operation operation) @safe pure {
