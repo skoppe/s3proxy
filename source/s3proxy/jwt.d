@@ -177,7 +177,7 @@ bool verifySignature(ubyte[] signature, string signing_input, string key, JWTAlg
 		}
 	}
 
-bool checkScopes(JWT jwt, string[] scopes) @safe {
+bool checkScopes(JWT jwt, const string[] scopes) @safe {
   import std.string : split;
   import std.algorithm : canFind, all;
   auto js = jwt.json["scope"];

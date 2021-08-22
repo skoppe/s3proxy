@@ -15,28 +15,28 @@ S3RequestInfo validListRequest() @safe pure nothrow {
 }
 
 @("authenticateRequest.list.valid")
-pure @safe unittest {
+@safe unittest {
   auto auths = [Access([Permission.read, Permission.write], Authentication(CredentialAuthentication("auth","test","test")))];
 
   authenticateRequest(validListRequest, auths).should == true;
 }
 
 @("authenticateRequest.list.no-read")
-pure @safe unittest {
+@safe unittest {
   auto auths = [Access([Permission.write], Authentication(CredentialAuthentication("auth","test","test")))];
 
   authenticateRequest(validListRequest, auths).should == false;
 }
 
 @("authenticateRequest.list.wrong-user")
-pure @safe unittest {
+@safe unittest {
   auto auths = [Access([Permission.write], Authentication(CredentialAuthentication("auth","wrong","test")))];
 
   authenticateRequest(validListRequest, auths).should == false;
 }
 
 @("authenticateRequest.list.wrong-pass")
-pure @safe unittest {
+@safe unittest {
   auto auths = [Access([Permission.write], Authentication(CredentialAuthentication("auth","test","wrong")))];
 
   authenticateRequest(validListRequest, auths).should == false;

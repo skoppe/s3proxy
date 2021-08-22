@@ -223,11 +223,11 @@ struct WebIdentityAuthentication {
   }
 }
 
-bool authenticateRequest(S3RequestInfo req, Access[] auths) @safe pure nothrow {
+bool authenticateRequest(S3RequestInfo req, Access[] auths) @safe nothrow {
   return authenticateRequest(req, auths);
 }
 
-bool authenticateRequest(ref S3RequestInfo req, Access[] auths) @safe pure nothrow {
+bool authenticateRequest(ref S3RequestInfo req, Access[] auths) @safe nothrow {
   import std.algorithm : filter;
   import std.array : array;
   auto arr = auths.dup();

@@ -16,12 +16,12 @@ import std.conv : to;
 import std.experimental.logger;
 
 struct Proxy {
-  Config config;
+  const Config config;
   JWKSCache jwksCache;
-  this(shared Config config) @trusted nothrow shared {
+  this(shared const Config config) @trusted nothrow shared {
     this.config = config;
   }
-  this(Config config) @trusted nothrow shared {
+  this(const Config config) @trusted nothrow shared {
     this.config = cast(shared)config;
   }
   Nullable!(Bucket) lookupBucket(string bucketName) @trusted nothrow shared {
@@ -86,45 +86,62 @@ struct Proxy {
     if (req.path == "/health")
       socket.sendHttpResponse(204, ["connection": "close", "content-length": "0"]);
     else if (req.path == "/auth")
-      generateCredentials(config, jwksCache, req, socket);
+      generateCredentials(cast(const(Config))config, jwksCache, req, socket);
     else
       endpoint(req, socket);
   }
 }
 
-void generateCredentials(ref shared Config config, ref shared JWKSCache jwksCache, ref HttpRequest req, Socket socket) @trusted nothrow {
+void generateCredentials(ref const Config config, ref shared JWKSCache jwksCache, ref HttpRequest req, Socket socket) @trusted nothrow {
   import asdf;
   import s3proxy.utils : ignoreException;
   try {
-    string msg = generateCredentials(cast(Config)config, jwksCache, req.parseQueryParams()).serializeToJson();
+    string msg = generateCredentials(config, jwksCache, req.parseQueryParams()).serializeToJson();
     socket.sendHttpResponse(200, ["content-type": "application/json", "connection": "close", "content-length": msg.length.to!string ], msg);
   } catch (Exception e) {
     socket.sendTextError(401, e.msg).ignoreException();
   }
 }
 
-auto generateCredentials(ref Config config, ref shared JWKSCache jwksCache, string[string] params) @safe {
+auto generateCredentials(ref const Config config, ref shared JWKSCache jwksCache, string[string] params) @safe {
   auto token = "token" in params;
   if (token is null) {
     throw new Exception("missing token");
   }
   if (auto provider = "provider" in params) {
-    // this is an oauth request
+    return generateOAuthCredentials(config, *token, *provider);
   } else {
     return generateOIDCCredentials(config, jwksCache, *token);
   }
-  throw new Exception("invalid request");
 }
 
 struct OIDCProviderJWTItem {
   import s3proxy.auth : OIDCAuthenticationProvider;
-  OIDCAuthenticationProvider provider;
+  const OIDCAuthenticationProvider provider;
   JWT jwt;
 }
 
-auto generateOIDCCredentials(JWKSCache)(ref Config config, ref JWKSCache jwksCache, string token) @trusted {
+auto generateOAuthCredentials(ref const Config config, string token, string provider) {
   import std.algorithm : filter;
-  import s3proxy.utils : firstEnforce;
+  import s3proxy.utils : firstEnforce, getRng;
+  auto item = config.oauthProviders
+    .filter!(p => p.endpoint.host == provider)
+    .filter!((provider){
+        import requests;
+        auto req = Request();
+        req.addHeaders(["Authorization": "Bearer "~token]);
+        auto resp = req.get(provider.endpoint.toString);
+        if (resp.code >= 299)
+          return false;
+        return true;
+      })
+    .firstEnforce("invalid token");
+  return item.auth.generateIdentity(getRng);
+}
+
+auto generateOIDCCredentials(JWKSCache)(ref const Config config, ref JWKSCache jwksCache, string token) @trusted {
+  import std.algorithm : filter;
+  import s3proxy.utils : firstEnforce, getRng;
   RawJWT raw = decodeRawJwt(token);
   string issuer = raw.payload["iss"].str;
   auto item = config.oidcProviders
