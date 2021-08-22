@@ -8,6 +8,7 @@ int main(string[] args)
                         "config",
                         "auth",
                         "server",
-                        "jwt"
+                        "jwt",
+                        "webidentity"
                         );
 }
