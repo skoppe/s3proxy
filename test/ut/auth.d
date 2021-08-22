@@ -89,7 +89,8 @@ unittest {
 @("generateKey")
 unittest {
   import std.algorithm : all;
-  auto key = WebIdentityAuthentication("bla", "ev", 10).generateKey();
+  import s3proxy.utils : getRng;
+  auto key = WebIdentityAuthentication("bla", "ev", 10).generateKey(getRng);
   key.prefix.should == "WEBA";
   key.salt[].should.not == WebIdentityAuthentication.WebIdentityKey.salt.init;
   key.expiry[].should.not == WebIdentityAuthentication.WebIdentityKey.expiry.init;
@@ -113,8 +114,9 @@ unittest {
 
 @("generateIdentity")
 unittest {
-  auto a = WebIdentityAuthentication("test","secret").generateIdentity;
-  auto b = WebIdentityAuthentication("test","secret").generateIdentity;
+  import s3proxy.utils : getRng;
+  auto a = WebIdentityAuthentication("test","secret").generateIdentity(getRng);
+  auto b = WebIdentityAuthentication("test","secret").generateIdentity(getRng);
   a.should.not == b;
 }
 

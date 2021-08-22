@@ -87,3 +87,15 @@ auto orElse(T, L)(T t, lazy L value) {
   import mir.algebraic : match;
   return t.match!((typeof(null))=>value,(ref t)=>t);
 }
+
+auto getRng() {
+  import std.random : Mt19937;
+  alias RNG = Mt19937;
+  static RNG* rng;
+  if (rng is null) {
+    rng = new Mt19937();
+    import std.random : unpredictableSeed;
+    rng.seed(unpredictableSeed);
+  }
+  return rng;
+}

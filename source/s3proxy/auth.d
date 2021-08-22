@@ -164,23 +164,19 @@ struct WebIdentityAuthentication {
     string key, secret;
   }
   import core.time : Duration;
-  import std.random : Mt19937;
   enum type = "web";
   string name, secret;
   ulong expires; // in seconds
-  Mt19937 rng;
-  this(string name, string secret, ulong expires = 3600) @safe {
-    import std.random : unpredictableSeed;
+  this(string name, string secret, ulong expires = 3600) @safe pure {
     this.name = name;
     this.secret = secret;
     this.expires = expires;
-    rng.seed(unpredictableSeed);
   }
   bool matches(string key) @safe pure {
     return key.length == 20 && key[0..4] == WebIdentityKey.prefix;
   }
-  Identity generateIdentity() @safe {
-    auto key = generateKey;
+  Identity generateIdentity(RNG)(RNG rng) @safe const {
+    auto key = generateKey(rng);
     return Identity(key.toString, generateSecret(key));
   }
   static WebIdentityKey parseKey(string raw) @safe pure {
@@ -196,7 +192,7 @@ struct WebIdentityAuthentication {
     bytes.take(4).copy(key.expiry[]);
     return key;
   }
-  WebIdentityKey generateKey() @safe {
+  WebIdentityKey generateKey(RNG)(RNG rng) @safe const {
     import std.random;
     import std.datetime : Clock;
     import std.bitmanip : nativeToLittleEndian;
@@ -208,7 +204,7 @@ struct WebIdentityAuthentication {
     auto salt = iota(0,6).map!(i => rng.uniform!ubyte);
     return WebIdentityKey(salt.staticArray!6, expiry);
   }
-  string generateSecret(WebIdentityKey key) @safe pure {
+  string generateSecret(WebIdentityKey key) @safe pure const {
     import std.string : representation;
     import std.digest.sha;
     import std.base64;

@@ -140,7 +140,7 @@ auto generateOIDCCredentials(JWKSCache)(ref Config config, ref JWKSCache jwksCac
         return item.jwt.checkScopes(item.provider.scopes);
       })
     .firstEnforce("invalid token");
-  return item.provider.auth.generateIdentity;
+  return item.provider.auth.generateIdentity(getRng);
 }
 
 void proxyInfo(S3 s3, ref HttpRequest req, Socket socket) @trusted {
