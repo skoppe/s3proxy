@@ -99,3 +99,18 @@ auto getRng() {
   }
   return rng;
 }
+
+template sliceUntil(alias fun) {
+  auto sliceUntil(Range)(Range range) nothrow {
+    import std.algorithm : countUntil;
+    try {
+      auto cnt = range[].countUntil!fun;
+      if (cnt == -1)
+        return range;
+      else
+        return range[0..cnt];
+    } catch (Exception e) {
+      assert(0);
+    }
+  }
+}

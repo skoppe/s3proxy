@@ -1,28 +1,15 @@
 module s3proxy.http;
 
-struct Header
-{
+import s3proxy.utils : sliceUntil;
+import std.socket : Socket;
+import mir.algebraic : Nullable;
+
+struct Header {
   const(char)[] name;
   const(char)[] value;
 }
 
-template sliceUntil(alias fun) {
-  auto sliceUntil(Range)(Range range) nothrow {
-    import std.algorithm : countUntil;
-    try {
-      auto cnt = range[].countUntil!fun;
-      if (cnt == -1)
-        return range;
-      else
-        return range[0..cnt];
-    } catch (Exception e) {
-      assert(0);
-    }
-  }
-}
-
-struct HttpRequest
-{
+struct HttpRequest {
   void toString(void delegate(const(char[])) @safe sink) @safe {
     sink("HttpRequest(");
     sink(method);
@@ -89,7 +76,6 @@ auto httpRequestParser() @safe {
   return initParser!HttpRequest();
 }
 
-import std.socket : Socket;
 HttpRequest parseHttpRequest(Socket socket, ubyte[] buffer) @safe {
   import std.socket;
   import httparsed;
@@ -139,7 +125,6 @@ HttpRequest parseHttpRequest(string buffer) @trusted pure {
   return parseHttpRequest(cast(ubyte[])buffer);
 }
 
-import mir.algebraic : Nullable;
 Nullable!T getHeaderOpt(T)(ref HttpRequest req, string header) nothrow {
   import std.algorithm : find;
   import std.string : toLower;
