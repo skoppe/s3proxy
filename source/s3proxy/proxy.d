@@ -5,6 +5,7 @@ import aws.aws : chunkedContent;
 import s3proxy.http;
 import s3proxy.config;
 import s3proxy.jwt;
+import s3proxy.jwk : JWKSCache;
 import std.socket;
 import s3proxy.protocol;
 import s3proxy.utils : ignoreException;
@@ -142,6 +143,8 @@ auto generateOAuthCredentials(ref const Config config, string token, string prov
 auto generateOIDCCredentials(JWKSCache)(ref const Config config, ref JWKSCache jwksCache, string token) @trusted {
   import std.algorithm : filter;
   import s3proxy.utils : firstEnforce, getRng;
+  import s3proxy.jwk : JWKS, validateRawJwtSignature;
+
   RawJWT raw = decodeRawJwt(token);
   string issuer = raw.payload["iss"].str;
   auto item = config.oidcProviders

@@ -9,6 +9,8 @@ int main(string[] args)
                         "auth",
                         "server",
                         "jwt",
-                        "webidentity"
+                        "jwk",
+                        "webidentity",
+                        "crypto"
                         );
 }
