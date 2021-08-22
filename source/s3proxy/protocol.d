@@ -2,6 +2,8 @@ module s3proxy.protocol;
 
 import s3proxy.http : HttpRequest;
 import mir.algebraic : nullable, Nullable;
+import aws.sigv4 : CanonicalRequest;
+import std.socket : Socket;
 
 enum S3Operation {
   info,
@@ -12,104 +14,6 @@ enum S3Operation {
   uploadMultipartFinish,
   uploadMultipart,
   unknown,
-}
-
-static struct Chunk {
-  ubyte[] buffer;
-  size_t length;
-  size_t extensionStart;
-  size_t dataStart;
-  const(char)[] extension() @safe scope return pure {
-    return cast(const(char)[])buffer[extensionStart .. dataStart-2];
-  }
-  ubyte[] data() @safe pure return scope {
-    return buffer[dataStart .. dataStart+length];
-  }
-}
-
-auto readChunkIntoBuffer(Range)(ref Range r, ref ubyte[] buffer, size_t expectedExtensionSize = 85) {
-  import std.algorithm : until, copy, map;
-  import std.conv : to;
-  import std.range : popFront, take, front;
-  import std.array : array;
-  import std.range : refRange;
-  import std.format : formattedRead;
-  auto range = refRange(&r);
-  size_t extensionStart = 0, dataStart = 0;
-  size_t length;
-  while(true) {
-    buffer[extensionStart++] = range.front();
-    range.popFront();
-    if (range.front == ';') {
-      (cast(char[])buffer[0..extensionStart]).formattedRead("%x", length);
-      dataStart = extensionStart;
-      buffer[dataStart++] = ';';
-      range.popFront();
-      if (length+expectedExtensionSize+extensionStart > buffer.length)
-        buffer.length = length+expectedExtensionSize+extensionStart;
-      // decode extension
-      while(true) {
-        buffer[dataStart++] = range.front();
-        range.popFront();
-        if (dataStart > buffer.length)
-          buffer.length = length+(dataStart*2);
-        if (range.front == '\r') {
-          buffer[dataStart++] = '\r';
-          buffer[dataStart++] = '\n';
-          range.popFront();
-          range.popFront();
-          break;
-        }
-      }
-      break;
-    } else if (range.front == '\r') {
-      (cast(char[])buffer[0..extensionStart]).formattedRead("%x", length);
-      dataStart = extensionStart;
-      buffer[dataStart++] = '\r';
-      buffer[dataStart++] = '\n';
-      range.popFront();
-      range.popFront();
-      break;
-    }
-  }
-  if (length+dataStart+2 > buffer.length) {
-    buffer.length = length+dataStart+2;
-  }
-  for(size_t idx = 0; idx < length; idx++) {
-    buffer[dataStart+idx] = range.front();
-    range.popFront();
-  }
-  buffer[dataStart+length] = '\r';
-  buffer[dataStart+length+1] = '\n';
-  range.popFront();
-  range.popFront();
-  return Chunk(buffer, length, extensionStart, dataStart);
-}
-
-auto decodeChunkedUpload(Range)(Range range, ref ubyte[] buffer) {
-  struct Decoded {
-    ubyte[] buffer;
-    Range range;
-    Chunk chunk;
-    this(Range range, ubyte[] buffer) {
-      this.range = range;
-      this.buffer = buffer;
-      chunk = readChunkIntoBuffer(this.range, this.buffer);
-    }
-    bool empty() {
-      return chunk.buffer.length == 0;
-    }
-    Chunk front() {
-      return chunk;
-    }
-    void popFront() {
-      if (chunk.data.length == 0)
-        chunk = Chunk.init;
-      else
-        chunk = readChunkIntoBuffer(this.range, this.buffer);
-    }
-  }
-  return Decoded(range, buffer);
 }
 
 struct Credential {
@@ -167,7 +71,6 @@ Nullable!SignatureHeader extractSignatureHeader(ref HttpRequest req) @safe pure 
     }).ifThrown(Nullable!SignatureHeader().init);
 }
 
-import aws.sigv4 : CanonicalRequest;
 Nullable!CanonicalRequest extractCanonicalRequest(ref HttpRequest req, Nullable!SignatureHeader signatureHeader) @safe pure nothrow {
   import mir.algebraic : optionalMatch;
   import std.algorithm : each,map;
@@ -221,7 +124,6 @@ auto guessS3Operation(ref S3RequestInfo req) @safe pure {
   return S3Operation.unknown;
 }
 
-import std.socket : Socket;
 void sendS3Error(Socket socket, Exception e, string resource, string requestId) @safe {
   socket.sendS3Error(500, "InternalError", e.msg, resource, requestId);
 }

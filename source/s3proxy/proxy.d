@@ -190,6 +190,8 @@ void proxyList(S3 s3, ref HttpRequest req, Socket socket) @trusted {
 void proxyUpload(S3 s3, ref HttpRequest req, Socket socket) @trusted {
   import requests : Response;
   import s3proxy.utils : getEnforce, orElse;
+  import s3proxy.chunk : decodeChunkedUpload, rebuffer;
+
   enum size_t chunkSize = 32*1024;
   Response forwardUpload(Range)(Range content, size_t contentLength, string contentType) {
     string[string] headers = ["content-type": contentType];
