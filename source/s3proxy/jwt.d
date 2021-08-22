@@ -1,12 +1,6 @@
 module s3proxy.jwt;
 
-import std.json;
-import std.base64;
-import std.range;
-import std.algorithm;
-import std.format : format;
-import jwtd.jwt : JWTAlgorithm;
-import s3proxy.crypto : verifySignature;
+import std.json : JSONValue, parseJSON, JSONException, JSON_TYPE;
 
 struct JWT {
   JSONValue json;
@@ -23,8 +17,10 @@ struct RawJWT {
 RawJWT decodeRawJwt(string token) @trusted {
   import jwtd.jwt;
 	import std.algorithm : count;
+  import std.range : split;
 	import std.conv : to;
 	import std.uni : toUpper;
+  import std.base64 : Base64URLNoPadding;
 
 	if(count(token, ".") != 2)
 		throw new VerifyException("Token is incorrect.");
@@ -69,6 +65,9 @@ RawJWT decodeRawJwt(string token) @trusted {
 
 JWT validateRawJwtSignature(RawJWT jwt, string key) @trusted {
   import jwtd.jwt : VerifyException;
+  import std.base64 : Base64URLNoPadding;
+  import s3proxy.crypto : verifySignature;
+
   auto signature = Base64URLNoPadding.decode(jwt.parts[2]);
 	if(!verifySignature(signature, jwt.parts[0]~"."~jwt.parts[1], key, jwt.alg))
 		throw new VerifyException("Signature is incorrect.");
@@ -79,6 +78,7 @@ JWT validateRawJwtSignature(RawJWT jwt, string key) @trusted {
 bool checkScopes(JWT jwt, const string[] scopes) @safe {
   import std.string : split;
   import std.algorithm : canFind, all;
+  
   auto js = jwt.json["scope"];
   if (js.type == JSON_TYPE.STRING) {
     string[] jwtScopes = js.str.split(" ");
@@ -89,6 +89,7 @@ bool checkScopes(JWT jwt, const string[] scopes) @safe {
 
 JWT validateJwt(JWT jwt) @safe {
   import std.datetime.systime : SysTime, Clock;
+
   auto now = Clock.currTime().toUnixTime();
   if (auto exp = "exp" in jwt.json) {
     if (now >= exp.integer) {

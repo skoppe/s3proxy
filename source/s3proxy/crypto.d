@@ -9,7 +9,6 @@ import deimos.openssl.err;
 import deimos.openssl.ec;
 import std.exception : enforce;
 
-
 extern(C) int RSA_set0_key(RSA *r, BIGNUM *n, BIGNUM *e, BIGNUM *d);
 extern(C) int EC_KEY_set_public_key_affine_coordinates(EC_KEY *key, BIGNUM *x, BIGNUM *y);
 
