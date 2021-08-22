@@ -2,6 +2,7 @@ module s3proxy.auth;
 
 import s3proxy.protocol;
 import mir.algebraic : Algebraic;
+import url;
 
 enum Permission : string {
   read = "read",
@@ -14,7 +15,7 @@ struct Access {
 }
 
 struct OAuthAuthenticationProvider {
-  string endpoint; // the oauth info endpoint
+  URL endpoint; // the oauth info endpoint
   string[] scopes;
   WebIdentityAuthentication auth;
 }

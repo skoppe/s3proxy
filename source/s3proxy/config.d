@@ -71,6 +71,7 @@ struct Config {
 Config parseConfig(RawConfig raw) @safe {
   import std.algorithm : map;
   import std.array : array;
+  import url;
   auto buckets = raw.buckets.map!((b){
       auto server = raw.locateServer(b.server);
       auto accesses = b.access.map!((a){
@@ -81,7 +82,7 @@ Config parseConfig(RawConfig raw) @safe {
     }).array();
   auto oauthProviders = raw.oauthProviders.map!((provider){
       auto auth = raw.locateAuth(provider.auth).decodeAuth;
-      return OAuthAuthenticationProvider(provider.endpoint, provider.scopes, auth.get!WebIdentityAuthentication);
+      return OAuthAuthenticationProvider(provider.endpoint.parseURL, provider.scopes, auth.get!WebIdentityAuthentication);
     }).array();
   auto oidcProviders = raw.oidcProviders.map!((provider){
       auto auth = raw.locateAuth(provider.auth).decodeAuth;
