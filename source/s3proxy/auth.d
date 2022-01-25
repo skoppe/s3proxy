@@ -85,8 +85,8 @@ struct WebIdentityAuthentication {
     auto decoder = raw.representation!(immutable(char))[4..$].takeExactly(16).keyDecoder;
     auto bytes = refRange(&decoder);
     WebIdentityKey key;
-    bytes.take(6).copy(key.salt[]);
-    bytes.take(4).copy(key.expiry[]);
+    (() @trusted => bytes.take(6).copy(key.salt[]))();
+    (() @trusted => bytes.take(4).copy(key.expiry[]))();
     return key;
   }
   WebIdentityKey generateKey(RNG)(RNG rng) @safe const {

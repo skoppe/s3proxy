@@ -105,7 +105,7 @@ import s3proxy.utils : openRandomSocket, s3Client, localstack;
     static struct NullScheduler {}
     shared StopSource stopSource;
     void setValue() @safe {}
-    void setError(Exception e) nothrow @safe {}
+    void setError(Throwable e) nothrow @safe {}
     void setDone() nothrow @safe {}
     auto getStopToken() { return StopToken(stopSource); }
     auto getScheduler() { return NullScheduler(); }

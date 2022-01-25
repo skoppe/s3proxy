@@ -171,7 +171,7 @@ expires = 3600`;
 
   auto config = content.loadConfig().parseConfig();
   config.oauthProviders.length.should == 1;
-  config.oauthProviders[0].tryMatch!((OAuthAuthenticationProvider oauth){
+  config.oauthProviders[0].tryMatch!((OAuthAuthenticationProvider oauth) @safe {
       oauth.endpoint.toString.should == "https://git.example.com/oauth/token/info";
       oauth.scopes.should == ["api"];
       oauth.auth.tryMatch!((WebIdentityAuthentication auth){
