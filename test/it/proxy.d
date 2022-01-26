@@ -10,7 +10,7 @@ import unit_threaded;
   import concurrency.stream : transform, take, toList;
   import concurrency.sender;
   import concurrency.stoptoken;
-  import concurrency.operations : via, then, whenAll, withStopToken;
+  import concurrency.operations : via, then, whenAll, withStopToken, withStopSource;
   import concurrency.thread;
   import concurrency;
   import concurrency.nursery;
@@ -50,7 +50,7 @@ auth = "test"
 
   auto runServer = server.transform((socket_t t) shared @trusted {
       nursery.run(just(t).via(pool.getScheduler().schedule()).withStopToken(&api.handle));
-    }).collect(() shared {}).via(ThreadSender());
+    }).collect(() shared {}).via(ThreadSender()).withStopSource(stopSource);
 
   auto writeOne = just(socket.port).then((ushort port) shared @trusted {
       s3Client(4566).createBucket("test-bucket");
@@ -79,7 +79,7 @@ auth = "test"
     });
 
   nursery.run(runServer);
-  whenAll(nursery, writeOne).syncWait(stopSource).assumeOk;
+  whenAll(nursery, writeOne).syncWait().assumeOk;
 }
 
 @("health")
